@@ -8,17 +8,6 @@
 #include <unordered_map>
 
 //Helper Functions
-bool IsVisited(std::unordered_map<int,std::unordered_map<int, bool>>& visited, Point2D& position) {
-  if (visited.contains(position.y) && visited[position.y].contains(position.x)) {
-    return true;
-  }
-  return false;
-}
-
-void SetVisited(std::unordered_map<int,std::unordered_map<int, bool>>& visited, Point2D& position) {
-  visited[position.y][position.x] = true;
-}
-
 bool HasParent(std::unordered_map<int, std::unordered_map<int, Point2D>>& parent, Point2D& position) {
   if (parent.contains(position.y) && parent[position.y].contains(position.x)) {
     return true;
@@ -35,11 +24,10 @@ Point2D GetParent(std::unordered_map<int, std::unordered_map<int, Point2D>>& par
 }
 
 //Heuristic
-
 int HeuristicToBoundary(Point2D p, int minBound, int maxBound) {
   int dx = std::min(std::abs(p.x - minBound), std::abs(p.x - maxBound));
   int dy = std::min(std::abs(p.y - minBound), std::abs(p.y - maxBound));
-  return std::min(dx,dy);
+  return (dx + dy + std::abs(dx - dy)) / 2; //Hex Distance
 }
 
 //Nodes!
@@ -60,16 +48,25 @@ Point2D Cat::Move(World* world) {
   int halfLength = sideLength / 2;
   int minBound = -halfLength;
   int maxBound = (sideLength % 2 == 0) ? halfLength - 1 : halfLength;
-  std::unordered_map<int,std::unordered_map<int, bool>> visited;
+  std::unordered_map<int,std::unordered_map<int, bool>> closed;
   std::unordered_map<int, std::unordered_map<int, Point2D>> parent;
 
+  //Experimental
+  std::unordered_map<int, std::unordered_map<int, int>> gScore;
   std::priority_queue<Node, std::vector<Node>, std::greater<Node>> open;
+
+  gScore[start.y][start.x] = 0;
   open.push({start, 0, HeuristicToBoundary(start, minBound, maxBound)}); //Add starting position
-  SetVisited(visited, start);
+  //SetVisited(visited, start);
 
   while (!open.empty()) {
     Node current = open.top();
     open.pop();
+
+    if (closed[current.pos.y][current.pos.x]) {
+      continue; //Already Processed
+    }
+    closed[current.pos.y][current.pos.x] = true;
 
     if (current.pos.x == minBound || current.pos.y == minBound || current.pos.x == maxBound || current.pos.y == maxBound) { //Checking Boundaries
       std::vector<Point2D> path;
@@ -96,14 +93,20 @@ Point2D Cat::Move(World* world) {
       world->SW(current.pos)
       };
     for (auto& next : neighbors) {
-      if (!IsVisited(visited, next) && world->isValidPosition(next) && !world->getContent(next)) {
-        SetVisited(visited, next);
+      if (!world->isValidPosition(next) || world->getContent(next)) {
+        continue; //Skip walls and invalid spots
+      }
+      int tentG = current.g + 1;
+
+      if (!gScore[next.y].count(next.x) || tentG < gScore[next.y][next.x]) {
+        gScore[next.y][next.x] = tentG;
         SetParent(parent, next, current.pos);
-        int g = current.g + 1;
-        int f = g + HeuristicToBoundary(next, minBound, maxBound);
-        open.push({next, g, f});
+
+        int f = tentG + HeuristicToBoundary(next, minBound, maxBound);
+        open.push({next, tentG, f});
       }
     }
   }
   return start;
 }
+
