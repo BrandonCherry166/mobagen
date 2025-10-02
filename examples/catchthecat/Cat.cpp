@@ -81,7 +81,7 @@ Point2D Cat::Move(World* world) {
       world->SW(current)
       };
     for (auto& next : neighbors) {
-      if (!IsVisited(visited, next) && world->catCanMoveToPosition(next)) {
+      if (!IsVisited(visited, next) && world->isValidPosition(next) && !world->getContent(next)) {
         SetVisited(visited, next);
         SetParent(parent, next, current);
         q.push(next);
