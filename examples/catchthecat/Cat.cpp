@@ -85,6 +85,8 @@ Point2D Cat::Move(World* world) {
         SetVisited(visited, next);
         SetParent(parent, next, current);
         q.push(next);
+
+        std::cout << "Adding Neighbor: " << next.x << ", " << next.y << std::endl;
       }
     }
   }
