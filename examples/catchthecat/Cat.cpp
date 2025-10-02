@@ -7,6 +7,7 @@
 #include <queue>
 #include <unordered_map>
 
+//Helper Functions
 bool IsVisited(std::unordered_map<int,std::unordered_map<int, bool>>& visited, Point2D& position) {
   if (visited.contains(position.y) && visited[position.y].contains(position.x)) {
     return true;
@@ -33,6 +34,26 @@ Point2D GetParent(std::unordered_map<int, std::unordered_map<int, Point2D>>& par
   return parent[position.y][position.x];
 }
 
+//Heuristic
+
+int HeuristicToBoundary(Point2D p, int minBound, int maxBound) {
+  int dx = std::min(std::abs(p.x - minBound), std::abs(p.x - maxBound));
+  int dy = std::min(std::abs(p.y - minBound), std::abs(p.y - maxBound));
+  return std::min(dx,dy);
+}
+
+//Nodes!
+struct Node {
+  Point2D pos;
+  int g; // Cost
+  int f; //g + h
+
+  bool operator>(const Node& other) const {
+    return f > other.f;
+  }
+};
+
+
 Point2D Cat::Move(World* world) {
   Point2D start = world -> getCat();
   int sideLength = world->getWorldSideSize();
@@ -42,29 +63,23 @@ Point2D Cat::Move(World* world) {
   std::unordered_map<int,std::unordered_map<int, bool>> visited;
   std::unordered_map<int, std::unordered_map<int, Point2D>> parent;
 
-  std::queue<Point2D> q;
-
-  q.push(start); //Add starting position
+  std::priority_queue<Node, std::vector<Node>, std::greater<Node>> open;
+  open.push({start, 0, HeuristicToBoundary(start, minBound, maxBound)}); //Add starting position
   SetVisited(visited, start);
 
-  while (!q.empty()) {
-    Point2D current = q.front();
-    q.pop();
+  while (!open.empty()) {
+    Node current = open.top();
+    open.pop();
 
-    std::cout << current.x << ", " << current.y << std::endl;
-    if (current.x == minBound || current.y == minBound || current.x == maxBound || current.y == maxBound) { //Checking Boundaries
+    if (current.pos.x == minBound || current.pos.y == minBound || current.pos.x == maxBound || current.pos.y == maxBound) { //Checking Boundaries
       std::vector<Point2D> path;
-      for (Point2D v = current; HasParent(parent, v); v = GetParent(parent, v)) {
+      for (Point2D v = current.pos; HasParent(parent, v); v = GetParent(parent, v)) {
         path.push_back(v);
       }
       path.push_back(start);
       std::reverse(path.begin(), path.end());
-      std::cout << "Path to Boundary: " << std::endl;
-      for (auto &p: path) {
-        std::cout << p.x << ", " << p.y << std::endl;
-      }
 
-      if (path.size() >= 2) {
+      if (path.size() > 1) {
         return path[1]; //Take the first step
       }
       else {
@@ -73,20 +88,20 @@ Point2D Cat::Move(World* world) {
     }
     std::vector<Point2D> neighbors =
       {
-      world->E(current),
-      world->W(current),
-      world->NE(current),
-      world->NW(current),
-      world->SE(current),
-      world->SW(current)
+      world->E(current.pos),
+      world->W(current.pos),
+      world->NE(current.pos),
+      world->NW(current.pos),
+      world->SE(current.pos),
+      world->SW(current.pos)
       };
     for (auto& next : neighbors) {
       if (!IsVisited(visited, next) && world->isValidPosition(next) && !world->getContent(next)) {
         SetVisited(visited, next);
-        SetParent(parent, next, current);
-        q.push(next);
-
-        std::cout << "Adding Neighbor: " << next.x << ", " << next.y << std::endl;
+        SetParent(parent, next, current.pos);
+        int g = current.g + 1;
+        int f = g + HeuristicToBoundary(next, minBound, maxBound);
+        open.push({next, g, f});
       }
     }
   }
