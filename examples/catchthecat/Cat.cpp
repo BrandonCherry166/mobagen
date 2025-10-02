@@ -34,52 +34,51 @@ Point2D GetParent(std::unordered_map<int, std::unordered_map<int, Point2D>>& par
 }
 
 Point2D Cat::Move(World* world) {
+  Point2D start = world -> getCat();
   int sideLength = world->getWorldSideSize();
-  Point2D pos = world->getCat();
-  int dr_even[6] = {-1, -1, 0, 0, 1, 1};
-  int dc_even[6] = {0, 1, -1, 1, 0, 1};
-  int dr_odd[6] = {-1, -1, 0, 0, 1, 1};
-  int dc_odd[6] = {-1, 0, -1, 1, -1, 0};
-
   std::unordered_map<int,std::unordered_map<int, bool>> visited;
   std::unordered_map<int, std::unordered_map<int, Point2D>> parent;
 
   std::queue<Point2D> q;
 
-  q.push(pos); //Add starting position
-  SetVisited(visited, pos);
+  q.push(start); //Add starting position
+  SetVisited(visited, start);
 
   while (!q.empty()) {
     Point2D current = q.front();
     q.pop();
 
-    if (!world->isValidPosition(current)) { //Checking Boundaries
+    if (current.x == 0 || current.y == 0 || current.x == sideLength -1 || current.y == sideLength - 1) { //Checking Boundaries
       std::vector<Point2D> path;
       for (Point2D v = current; HasParent(parent, v); v = GetParent(parent, v)) {
         path.push_back(v);
       }
-      path.push_back(pos);
-      reverse(path.begin(), path.end());
+      path.push_back(start);
+      std::reverse(path.begin(), path.end());
 
-      if (path.size() > 1) {
+      if (path.size() >= 2) {
         return path[1]; //Take the first step
       }
-      return pos;
+      else {
+        return path[0];
+      }
     }
-
-    int *dr = (current.y % 2 == 0 ? dr_even : dr_odd);
-    int *dc = (current.y % 2 == 0 ? dc_even : dc_odd);
-
-    for (int k = 0; k < 6; k++) {
-      int nx = current.x + dc[k];
-      int ny = current.y + dr[k];
-      Point2D temp (nx,ny);
-      if (world->isValidPosition(temp) && !IsVisited(visited, temp) && world->catCanMoveToPosition(temp)) {
-        SetVisited(visited, temp);
-        SetParent(parent, temp, current);
-        q.push(temp);
+    std::vector<Point2D> neighbors =
+      {
+      world->E(current),
+      world->W(current),
+      world->SE(current),
+      world->SW(current),
+      world->NW(current),
+      world->NW(current),
+      };
+    for (auto& next : neighbors) {
+      if (!IsVisited(visited, next) && world->catCanMoveToPosition(next)) {
+        SetVisited(visited, next);
+        SetParent(parent, next, current);
+        q.push(next);
       }
     }
   }
-  return pos;
+  return start;
 }
