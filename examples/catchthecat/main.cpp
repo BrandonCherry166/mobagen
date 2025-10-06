@@ -35,10 +35,10 @@ std::vector<bool> parseBoardString(const std::string& boardStr, int size) {
   for (int i = 0; i < boardStr.length() && validCharCount < expectedCount; i++) {
     char c = boardStr[i];
     
-    if (c == '#' || c == 'C') {
+    if (c == '#') {
       worldState[validCharCount] = true;  // blocked
       validCharCount++;
-    } else if (c == '.') {
+    } else if (c == '.' || c == 'C') {
       worldState[validCharCount] = false; // empty (cat position handled separately)
       validCharCount++;
     }
@@ -104,7 +104,9 @@ int parseCommandLineArguments(int argc, char** argv, GameConfig& config) {
 
 // Create and configure the engine based on settings
 Engine* createEngine(const GameConfig& config) {
-  SDL_Log("Creating Engine");
+  if (!config.headless) {
+    SDL_Log("Creating Engine");
+  }
   
   EngineSettings settings;
   if (config.headless) {
@@ -113,7 +115,9 @@ Engine* createEngine(const GameConfig& config) {
   }
   
   auto engine = new Engine(settings);
-  SDL_Log("Engine Created");
+  if (!config.headless) {
+    SDL_Log("Engine Created");
+  }
   return engine;
 }
 
@@ -133,17 +137,15 @@ int runHeadlessMode(Engine* engine, const GameConfig& config) {
   World* world = new World(engine, config.size, config.isCatTurn, catPos, worldState);
   
   // Print initial board state
-  std::cout << "Initial board state:\n";
-  world->print();
-  std::cout << "\nTurn: " << (config.isCatTurn ? "CAT" : "CATCHER") << "\n\n";
-  
   // Execute one turn
   world->step();
   
   // Print final board state
-  std::cout << "Board state after turn:\n";
   world->print();
-  std::cout << "\n";
+  
+  // Print processing time and move coordinates
+  std::cout << world->moveDuration << std::endl;
+  std::cout << world->lastMove.x << "," << world->lastMove.y << std::endl;
   
   delete world;
   return 0;
