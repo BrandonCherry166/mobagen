@@ -29,8 +29,35 @@ static std::vector<Point2D> GetNeighbors(World* world, Point2D p) {
     world->SE(p),
     world->SW(p)
   };
+}
 
-
+int CountReachableTiles(World* world, Point2D start, const std::unordered_map<Point2D, bool, PointHash>& tempWalls) {
+  std::queue<Point2D> q;
+  std::unordered_map<Point2D, bool, PointHash> visited; q.push(start);
+  visited[start] = true;
+  int count = 0;
+  while (!q.empty()) {
+    Point2D p = q.front();
+    q.pop();
+    count++;
+    for (auto& n : GetNeighbors(world, p)) {
+      if (!world->isValidPosition(n)) {
+        continue;
+      }
+      if (world->getContent(n)) {
+        continue;
+      }
+      if (tempWalls.contains(n)) {
+        continue;
+      }
+      if (visited[n]) {
+        continue;
+      }
+      visited[n] = true;
+      q.push(n);
+    }
+  }
+  return count;
 }
 bool IsBoundary(Point2D p, int side) {
   if (p.x == -side || p.x == side || p.y == -side || p.y == side) {
@@ -40,7 +67,10 @@ bool IsBoundary(Point2D p, int side) {
 }
 
 int Heuristic(Point2D a, Point2D b) {
-  return std::abs(a.x - b.x) + std::abs(a.y - b.y);
+  int dx = a.x - b.x;
+  int dy = a.y - b.y;
+  int dz = (a.x + a.y) - (b.x + b.y);
+  return (std::abs(dx) + std::abs(dy) + std::abs(dz)) / 2;
 }
 bool CanCatEscape(World* world, Point2D start, const std::unordered_map <Point2D, bool, PointHash>& tempWalls, int side) {
   std::queue <Point2D> queue;
@@ -159,6 +189,14 @@ Point2D Catcher::Move(World* world) {
       candidates.push_back(path[i]);
     }
   }
+
+  //Sort to prioritize edges
+  std::sort(candidates.begin(), candidates.end(), [side](const Point2D& a, const Point2D& b) {
+    auto distA = std::min({ side - std::abs(a.x), side - std::abs(a.y)});
+    auto distB = std::min({ side - std::abs(b.x), side - std::abs(b.y)});
+    return distA < distB;
+  });
+
   Point2D best = {-1, -1};
   int bestScore = std::numeric_limits<int>::max();
 
@@ -170,9 +208,22 @@ Point2D Catcher::Move(World* world) {
       return tile; //GG
     }
 
-    auto futurePath = AStar(world, catPos, side);
-    int score = futurePath.empty() ? 0 : (int) futurePath.size();
+    //auto futurePath = AStar(world, catPos, side);
+    int score = CountReachableTiles(world, catPos, tempWalls);
 
+    int worstAfterCat = std::numeric_limits<int>::min();
+    for (auto& n : GetNeighbors(world, catPos)) {
+      if (!world->isValidPosition(n))
+        continue;
+      if (world->getContent(n))
+        continue;
+      if (tempWalls.contains(n))
+        continue;
+
+      int region = CountReachableTiles(world, n, tempWalls);
+      worstAfterCat = std::max(worstAfterCat, region);
+    }
+    score = (worstAfterCat == std::numeric_limits<int>::min()) ? CountReachableTiles(world, catPos, tempWalls) : worstAfterCat;
     if (score < bestScore) {
       bestScore = score;
       best = tile;
