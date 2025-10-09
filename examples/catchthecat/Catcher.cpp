@@ -237,16 +237,9 @@ Point2D Catcher::Move(World* world) {
       best = tile;
     }
   }
-  if (best.x != -1 && best.y != -1 && world->isValidPosition(best) && !world->getContent(best)) {
+  if (best.x != -1 && best.y != -1 && world->isValidPosition(best) && !world->getContent(best) && catPos != best) {
     return best;
   }
-  else { //Safeguard to prevent invalid moves from sneaking through
-    for (auto& c : candidates) {
-      if (world->isValidPosition(c) && !world->getContent(c)) {
-        return c;
-      }
-    }
-    return {-1, -1}; //Failure
-  }
+  return {Point2D({catPos.x + 1, catPos.y})};
 }
 

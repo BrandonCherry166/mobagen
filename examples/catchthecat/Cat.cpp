@@ -76,7 +76,7 @@ Point2D Cat::Move(World* world) {
       std::reverse(path.begin(), path.end());
 
       if (path.size() > 1) {
-        if (world->isValidPosition(path[1]) && !world->getContent(path[1]))
+        if (world->isValidPosition(path[1]) && !world->getContent(path[1]) && world->getCat() != path[1])
           return path[1]; //Take the first step
       }
       else {
