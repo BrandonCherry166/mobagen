@@ -188,7 +188,7 @@ Point2D Catcher::Move(World* world) {
   }
 
   std::vector<Point2D> candidates;
-  for (int i = 0; i < (int)path.size() && i < 5; i++) {
+  for (int i = 0; i < (int)path.size() && i < side; i++) {
     if (!world->getContent(path[i])) {
       candidates.push_back(path[i]);
     }
