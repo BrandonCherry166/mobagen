@@ -192,8 +192,16 @@ Point2D Catcher::Move(World* world) {
 
   //Sort to prioritize edges
   std::sort(candidates.begin(), candidates.end(), [side](const Point2D& a, const Point2D& b) {
-    auto distA = std::min({ side - std::abs(a.x), side - std::abs(a.y)});
-    auto distB = std::min({ side - std::abs(b.x), side - std::abs(b.y)});
+    auto distA = std::min({
+    side - std::abs(a.x),
+    side - std::abs(a.y),
+    side - std::abs(a.x + a.y)});
+
+    auto distB = std::min({
+    side - std::abs(b.x),
+    side - std::abs(b.y),
+    side - std::abs(b.x + b.y)});
+
     return distA < distB;
   });
 
@@ -229,5 +237,16 @@ Point2D Catcher::Move(World* world) {
       best = tile;
     }
   }
-  return best;
+  if (best.x != -1 && best.y != -1 && world->isValidPosition(best) && !world->getContent(best)) {
+    return best;
+  }
+  else { //Safeguard to prevent invalid moves from sneaking through
+    for (auto& c : candidates) {
+      if (world->isValidPosition(c) && !world->getContent(c)) {
+        return c;
+      }
+    }
+    return {-1, -1}; //Failure
+  }
 }
+
