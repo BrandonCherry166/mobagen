@@ -240,6 +240,11 @@ Point2D Catcher::Move(World* world) {
   if (best.x != -1 && best.y != -1 && world->isValidPosition(best) && !world->getContent(best) && catPos != best) {
     return best;
   }
-  return {Point2D({catPos.x + 1, catPos.y})};
+  //All Else Fails, pick a direction to throw a wall in that is valid
+  for (auto n : GetNeighbors(world, catPos)) {
+    if (world->isValidPosition(n) && !world->getContent(n)) {
+      return n;
+    }
+  }
 }
 
