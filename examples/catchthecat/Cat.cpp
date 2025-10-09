@@ -80,7 +80,7 @@ Point2D Cat::Move(World* world) {
           return path[1]; //Take the first step
       }
       else {
-        return path[0];
+        return Point2D(path[0].x + 1, path[0].y);
       }
     }
     std::vector<Point2D> neighbors =
@@ -107,6 +107,6 @@ Point2D Cat::Move(World* world) {
       }
     }
   }
-  return start;
+  return Point2D(start.x + 1, start.y);
 }
 
