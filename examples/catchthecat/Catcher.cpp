@@ -180,7 +180,11 @@ Point2D Catcher::Move(World* world) {
   Point2D catPos = world->getCat();
   auto path = AStar(world, catPos, side);
   if (path.empty()) {
-   return {-1, -1};
+    for (auto n : GetNeighbors(world, catPos)) {
+      if (world->isValidPosition(n) && !world->getContent(n)) {
+        return n;
+      }
+    }
   }
 
   std::vector<Point2D> candidates;
