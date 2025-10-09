@@ -107,6 +107,20 @@ Point2D Cat::Move(World* world) {
       }
     }
   }
-  return Point2D(start.x + 1, start.y);
+  //All Else Fails, pick a direction to throw a wall in that is valid
+  std::vector<Point2D> neighbors =
+      {
+    world->E(world->getCat()),
+    world->W(world->getCat()),
+    world->NE(world->getCat()),
+    world->NW(world->getCat()),
+    world->SE(world->getCat()),
+    world->SW(world->getCat())
+    };
+  for (auto n : neighbors)  {
+    if (world->isValidPosition(n) && !world->getContent(n)) {
+      return n;
+    }
+  }
 }
 
